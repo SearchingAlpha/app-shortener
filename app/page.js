@@ -8,17 +8,17 @@ export default function LandingPage() {
   const router = useRouter();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white px-4">
-      <div className="bg-gray-800 p-12 rounded-lg shadow-lg text-center max-w-2xl w-full">
-        <h1 className="text-4xl font-bold text-white mb-4">
+    <div className="flex flex-col items-center justify-center min-h-screen text-black px-4">
+      <div className="bg-gray-200 p-12 rounded-lg shadow-lg text-center max-w-2xl w-full">
+        <h1 className="text-4xl font-bold text-black mb-4">
           Welcome to Your App
         </h1>
-        <p className="text-lg text-gray-400 mb-6">
+        <p className="text-lg text-gray-600 mb-6">
           A minimalistic app designed to enhance your experience.
         </p>
         <button
           onClick={() => router.push('/signup')}
-          className="px-6 py-3 bg-gray-700 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-black transition"
+          className="px-6 py-3 bg-blue-700 text-white text-lg font-semibold rounded-lg shadow-md hover:bg-black transition"
         >
           Get Started
         </button>
