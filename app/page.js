@@ -11,7 +11,7 @@ export default function LandingPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen text-black px-4">
-      <div className="bg-gray-100 p-12 rounded-lg shadow-lg text-center max-w-2xl w-full">
+      <div className="bg-white p-12 rounded-lg shadow-lg text-center max-w-2xl w-full">
         <h1 className="text-4xl font-bold text-black mb-4">
           Save time, increase your awareness.
         </h1>
@@ -20,7 +20,7 @@ export default function LandingPage() {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <ButtonPrimary onClick={() => router.push("/signup")}>Unlock Pro Access</ButtonPrimary>
-          <ButtonRegular onClick={() => router.push("/signup")}>Start For Free</ButtonRegular>
+          <ButtonRegular onClick={() => router.push("/dashboard")}>Start For Free</ButtonRegular>
         </div>
 
         <div className="mt-10">

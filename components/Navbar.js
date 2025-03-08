@@ -6,7 +6,7 @@ import ButtonRegular from "@/components/buttonRegular";
 
 export default function Navbar() {
   return (
-    <nav className="flex justify-between items-center p-4 bg-gray-100 shadow-md">
+    <nav className="flex justify-between items-center p-4 bg-white shadow-md">
       {/* Logo */}
       <Link href="/" className="text-xl font-bold">
         MyWebsite
