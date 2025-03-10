@@ -10,32 +10,30 @@ export default function LandingPage() {
   const router = useRouter();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen text-black px-4">
-      <div className="bg-white p-12 rounded-lg shadow-lg text-center max-w-2xl w-full">
+    <div className="flex flex-col lg:flex-row items-center justify-center min-h-screen text-black px-4 lg:px-16 gap-8">
+      {/* Left Column: Image */}
+      <div className="w-full lg:w-1/2 flex justify-center">
+        <Image 
+          src={landImg} 
+          alt="Landing Image" 
+          className="rounded-lg shadow-lg w-full max-w-lg"
+        />
+      </div>
+
+      {/* Right Column: Content */}
+      <div className="w-full lg:w-1/2 bg-white p-8 rounded-lg shadow-lg text-center lg:text-left">
         <h1 className="text-4xl font-bold text-black mb-4">
           Save time, increase your awareness.
         </h1>
-        <p className="text-lg text-gray-600 mb-6" align="left">
-        Enhance your short content creation with Shortener—because social media shouldn’t feel like pushing a rock uphill.        </p>
+        <p className="text-lg text-gray-600 mb-6">
+          Enhance your short content creation with Shortener—because social media shouldn’t feel like pushing a rock uphill.
+        </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
           <ButtonPrimary onClick={() => router.push("/signup")}>Unlock Pro Access</ButtonPrimary>
-          <ButtonRegular onClick={() => router.push("/dashboard")}>Start For Free</ButtonRegular>
-        </div>
-
-        <div className="mt-10">
-          <Image
-            src={landImg}
-            alt="App preview"
-            width={500}
-            height={300}
-            className="rounded-lg shadow-lg mx-auto"
-          />
+          <ButtonRegular onClick={() => router.push("/learn-more")}>Learn More</ButtonRegular>
         </div>
       </div>
-      <footer className="absolute bottom-5 text-gray-400 text-sm">
-        &copy; {new Date().getFullYear()} Your Company. All rights reserved.
-      </footer>
     </div>
   );
 }
