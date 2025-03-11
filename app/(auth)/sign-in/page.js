@@ -1,15 +1,20 @@
+
 import { GithubSignIn } from "@/components/github-sign-in";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/buttonRegular";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { signUp } from "@/lib/action";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
+console.log("Auth function:", auth); // Add this debug log
 
 const Page = async () => {
-
-  const session = await auth();
-  if (session) redirect("/");
+  try {
+    const session = await auth();
+    if (session?.user) redirect("/");
+  } catch (error) {
+    console.error("Authentication error:", error);
+  }
 
   return (
     <div className="w-full max-w-sm mx-auto space-y-6">
