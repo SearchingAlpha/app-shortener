@@ -7,5 +7,4 @@ const Github = () => {
     );
   };
   
-  export { Github };
-  
+  export { Github };  

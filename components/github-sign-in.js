@@ -1,4 +1,4 @@
-import { Button } from "@/components/buttonRegular";
+import { Button } from "@/components/ui/button";
 import { Github } from "@/components/ui/github";
 import { signIn } from "@/lib/auth";
 

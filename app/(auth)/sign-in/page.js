@@ -1,12 +1,13 @@
 
 import { GithubSignIn } from "@/components/github-sign-in";
-import { Button } from "@/components/buttonRegular";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { signUp } from "@/lib/action";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-console.log("Auth function:", auth); // Add this debug log
+
+
 
 const Page = async () => {
   try {
