@@ -14,8 +14,8 @@ export default function Navbar() {
 
       {/* Buttons */}
       <div className="flex gap-4">
-        <ButtonRegular onClick={() => router.push("/signup")}>Log in</ButtonRegular>
-        <ButtonPrimary onClick={() => router.push("/signup")}>Sign up</ButtonPrimary>  
+        <ButtonRegular onClick={() => router.push("/sign-in")}>Log in</ButtonRegular>
+        <ButtonPrimary onClick={() => router.push("/sign-up")}>Sign up</ButtonPrimary>  
       </div>
     </nav>
   );
