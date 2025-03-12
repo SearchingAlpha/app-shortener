@@ -31,7 +31,7 @@ export default function LandingPage() {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
           <ButtonPrimary onClick={() => router.push("/signup")}>Unlock Pro Access</ButtonPrimary>
-          <ButtonRegular onClick={() => router.push("/learn-more")}>Learn More</ButtonRegular>
+          <ButtonRegular onClick={() => router.push("/learn-more")}>Try now</ButtonRegular>
         </div>
       </div>
     </div>
