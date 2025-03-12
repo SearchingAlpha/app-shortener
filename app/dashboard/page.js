@@ -5,34 +5,62 @@ import { ArrowUp } from 'lucide-react';
 import ButtonPrimary from '@/components/buttonPrimary';
 
 export default function Dashboard() {
-  const [message, setMessage] = useState('');
+  const [text, setText] = useState('');
+  const [summaries, setSummaries] = useState([]);
   const inputRef = useRef(null);
+
+  const defaultPrompt = "Summarize the following text into multiple shorter publications.";
 
   useEffect(() => {
     if (inputRef.current) {
       inputRef.current.scrollTop = inputRef.current.scrollHeight;
     }
-  }, [message]);
+  }, [text]);
+
+  async function handleSummarize() {
+    if (!text.trim()) return;
+    
+    try {
+      const response = await fetch('/api/summarize', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, prompt: defaultPrompt }),
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch summaries');
+      
+      const data = await response.json();
+      setSummaries(data.summaries || []);
+    } catch (error) {
+      console.error('Error summarizing text:', error);
+    }
+  }
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen bg-gray-100 p-4">
-      {/* Chat Input Box */}
-      <div className="w-full max-w-2xl flex items-center bg-white shadow-lg rounded-xl p-4 relative">
-        <textarea
-          ref={inputRef}
-          placeholder="Type a message..."
-          className="w-full p-2 text-lg outline-none border-none bg-transparent resize-none overflow-y-auto max-h-60 h-48"
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          style={{ lineHeight: '1.5rem' }} // Adjusts line height for better spacing
-        />
-        {/* Floating Send Button */}
-        
-        <button
-          className="absolute right-4 bottom-4 bg-blue-500 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-all"
-        >
-          <ArrowUp size={24} />
-        </button>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-100 p-4 space-y-4">
+      <h1 className="text-2xl font-bold">Text Summarizer</h1>
+      
+      {/* Long Text Input */}
+      <textarea
+        ref={inputRef}
+        placeholder="Enter your long text here..."
+        className="w-full max-w-2xl p-3 text-lg outline-none border rounded-lg resize-none overflow-y-auto h-48"
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+      />
+
+      {/* Summarize Button */}
+      <ButtonPrimary onClick={handleSummarize}>
+        <ArrowUp className="h-5"/>
+      </ButtonPrimary>
+
+      {/* Display Summaries */}
+      <div className="w-full max-w-2xl space-y-4">
+        {summaries.map((summary, index) => (
+          <div key={index} className="p-3 bg-white shadow rounded-lg">
+            <p className="text-gray-800">{summary}</p>
+          </div>
+        ))}
       </div>
     </div>
   );
