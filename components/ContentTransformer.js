@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import CardSnippet from '@/components/CardSnippet';
-import ButtonGenerate from '@/components/ButtonGenerate';
+import ButtonGenerate from '@/components/ui/ButtonGenerate';
 import PlatformSelector from '@/components/PlatformSelector';
 
 export default function ContentTransformer() {
