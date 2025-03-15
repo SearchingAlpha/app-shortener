@@ -1,33 +1,64 @@
 // app/api/generate-snippets/route.js
-import { NextResponse } from "next/server";
-import { generateSocialSnippets, regenerateSnippet } from "@/lib/claude-api";
+import { NextResponse } from 'next/server';
+import { generateSocialSnippets, regenerateSnippet } from '@/lib/claude-api';
 
-// app/api/regenerate-snippet/route.js
 export async function POST(request) {
   try {
     const body = await request.json();
-    const { content, platform } = body;
-
-    if (!content || content.trim() === "") {
+    const { content, platforms, variantsPerPlatform = 1, regenerate } = body;
+    
+    // Validate content
+    if (!content || content.trim() === '') {
       return NextResponse.json(
-        { error: "Content is required" },
+        { error: 'Content is required' }, 
+        { status: 400 }
+      );
+    }
+    
+    // Handle regeneration request for a single platform
+    if (regenerate && typeof regenerate === 'string') {
+      try {
+        const snippet = await regenerateSnippet(content, regenerate);
+        return NextResponse.json({
+          snippets: {
+            [regenerate]: [snippet] // Wrap in array to maintain consistent response format
+          }
+        });
+      } catch (error) {
+        console.error('Regeneration error:', error);
+        return NextResponse.json(
+          { error: `Error from LLM service: ${error.message}` }, 
+          { status: 500 }
+        );
+      }
+    }
+    
+    // For full generation, validate platforms
+    if (!platforms || !Array.isArray(platforms) || platforms.length === 0) {
+      return NextResponse.json(
+        { error: 'At least one platform must be selected' }, 
         { status: 400 }
       );
     }
 
-    if (!platform) {
+    // Generate snippets for all selected platforms
+    try {
+      const snippets = await generateSocialSnippets(content, platforms, variantsPerPlatform);
+      
+      return NextResponse.json({
+        snippets
+      });
+    } catch (error) {
+      console.error('LLM generation error:', error);
       return NextResponse.json(
-        { error: "Platform is required" },
-        { status: 400 }
+        { error: `Error from LLM service: ${error.message}` }, 
+        { status: 500 }
       );
     }
-
-    const regeneratedSnippet = await regenerateSnippet(content, platform);
-    return NextResponse.json({ snippet: regeneratedSnippet }, { status: 200 });
   } catch (error) {
-    console.error("Error in regenerate-snippet API:", error);
+    console.error('Error processing request:', error);
     return NextResponse.json(
-      { error: error.message || "Failed to regenerate snippet" },
+      { error: 'Failed to generate snippets' }, 
       { status: 500 }
     );
   }

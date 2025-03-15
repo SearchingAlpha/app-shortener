@@ -5,11 +5,11 @@ import { RiSubtractFill } from 'react-icons/ri';
 
 export default function PlatformSelector({ selectedPlatforms, onPlatformChange }) {
   const platforms = [
-    { id: 'x', name: 'X (Twitter)', icon: <FiTwitter className="w-5 h-5" /> },
-    { id: 'linkedin', name: 'LinkedIn', icon: <FiLinkedin className="w-5 h-5" /> },
-    { id: 'instagram', name: 'Instagram', icon: <FiInstagram className="w-5 h-5" /> },
+    { id: 'xPost', name: 'X (Twitter)', icon: <FiTwitter className="w-5 h-5" /> },
+    { id: 'linkedinPost', name: 'LinkedIn', icon: <FiLinkedin className="w-5 h-5" /> },
+    { id: 'instagramCaption', name: 'Instagram', icon: <FiInstagram className="w-5 h-5" /> },
     { id: 'facebook', name: 'Facebook', icon: <FiFacebook className="w-5 h-5" /> },
-    { id: 'substack', name: 'Substack', icon: <RiSubtractFill className="w-5 h-5" /> }
+    { id: 'substackNote', name: 'Substack', icon: <RiSubtractFill className="w-5 h-5" /> }
   ];
 
   return (

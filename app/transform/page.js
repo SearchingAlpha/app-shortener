@@ -11,12 +11,13 @@ export default function ContentGenerator() {
   const [files, setFiles] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [debugInfo, setDebugInfo] = useState(null);
   const [snippets, setSnippets] = useState(null);
   const [selectedPlatforms, setSelectedPlatforms] = useState({
     xPost: true,
-    linkedinPost: true,
-    instagramCaption: true,
-    substackNote: true,
+    linkedinPost: false,
+    instagramCaption: false,
+    substackNote: false,
     facebook: false
   });
 
@@ -30,10 +31,11 @@ export default function ContentGenerator() {
     setContent(extractedContent);
   };
 
-  // Generate all snippets
+  // Generate snippets for selected platform only
   const handleGenerateSnippets = async (e) => {
     e.preventDefault();
     setError('');
+    setDebugInfo(null);
     
     if (!content.trim()) {
       setError('Please enter some content to generate snippets');
@@ -41,22 +43,21 @@ export default function ContentGenerator() {
     }
     
     // Check if any platform is selected
-    const hasSelectedPlatforms = Object.entries(selectedPlatforms)
+    const hasSelectedPlatform = Object.entries(selectedPlatforms)
       .some(([_, isSelected]) => isSelected);
     
-    if (!hasSelectedPlatforms) {
-      setError('Please select at least one platform');
+    if (!hasSelectedPlatform) {
+      setError('Please select a platform');
       return;
     }
+    
+    // Get the single selected platform
+    const selectedPlatform = Object.entries(selectedPlatforms)
+      .find(([_, isSelected]) => isSelected)[0];
     
     setIsLoading(true);
     
     try {
-      // Prepare data for API call (include only selected platforms)
-      const selectedPlatformsArray = Object.entries(selectedPlatforms)
-        .filter(([_, isSelected]) => isSelected)
-        .map(([platform]) => platform);
-      
       const response = await fetch('/api/generate-snippets', {
         method: 'POST',
         headers: {
@@ -64,11 +65,52 @@ export default function ContentGenerator() {
         },
         body: JSON.stringify({ 
           content,
-          platforms: selectedPlatformsArray
+          platforms: [selectedPlatform], // Only send the selected platform
+          variantsPerPlatform: 3 // Request 3 variants
         }),
       });
       
-      const data = await response.json();
+      // Get raw response text first for debugging
+      const rawResponseText = await response.text();
+      console.log('Raw API response:', rawResponseText);
+      console.log('Response length:', rawResponseText.length);
+      
+      if (rawResponseText.length > 0) {
+        console.log('First character code:', rawResponseText.charCodeAt(0));
+        console.log('First 50 characters:', rawResponseText.substring(0, 50));
+      }
+      
+      // Store debug info
+      setDebugInfo({
+        rawLength: rawResponseText.length,
+        firstCharCode: rawResponseText.length > 0 ? rawResponseText.charCodeAt(0) : null,
+        firstFiftyChars: rawResponseText.substring(0, 50),
+        responseStatus: response.status,
+        responseStatusText: response.statusText,
+        contentType: response.headers.get('content-type')
+      });
+      
+      // Only try to parse if we have content
+      if (!rawResponseText || rawResponseText.trim() === '') {
+        throw new Error('Empty response from API');
+      }
+      
+      // Try to parse the JSON
+      let data;
+      try {
+        data = JSON.parse(rawResponseText);
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError);
+        
+        // Try to clean the response if it might have BOM or whitespace
+        const cleaned = rawResponseText.trim().replace(/^\uFEFF/, '');
+        try {
+          data = JSON.parse(cleaned);
+          console.log('Successfully parsed after cleaning');
+        } catch (secondParseError) {
+          throw new Error(`Failed to parse response as JSON: ${parseError.message}`);
+        }
+      }
       
       if (!response.ok) {
         throw new Error(data.error || 'Failed to generate snippets');
@@ -77,17 +119,28 @@ export default function ContentGenerator() {
       // Transform the API response into our expected format with variants
       const transformedSnippets = {};
       
-      Object.entries(data.snippets).forEach(([platform, snippet]) => {
-        transformedSnippets[platform] = {
-          variants: [{
-            text: snippet.text,
-            counter: platform === 'xPost' 
-              ? `${snippet.charCount}/${snippet.maxChars || 280}`
-              : `${snippet.charCount} characters`,
+      // Handle response format with array of variants
+      if (Array.isArray(data.snippets[selectedPlatform])) {
+        transformedSnippets[selectedPlatform] = {
+          variants: data.snippets[selectedPlatform].map(variant => ({
+            text: variant.text,
+            counter: selectedPlatform === 'xPost' 
+              ? `${variant.text.length}/${variant.maxChars || 280}`
+              : `${variant.text.length} characters`,
             isRegenerating: false
-          }]
+          }))
         };
-      });
+      } else {
+        // Fallback handling if API returns unexpected format
+        console.warn('API did not return expected variant array format');
+        transformedSnippets[selectedPlatform] = {
+          variants: Array(3).fill().map(() => ({
+            text: 'Error: API response format incorrect. Please try again.',
+            counter: '0/0',
+            isRegenerating: false
+          }))
+        };
+      }
       
       setSnippets(transformedSnippets);
     } catch (err) {
@@ -104,6 +157,8 @@ export default function ContentGenerator() {
     
     // Update the UI to show regenerating state
     setSnippets(prev => {
+      if (!prev || !prev[platform]?.variants) return prev;
+      
       const updatedVariants = [...prev[platform].variants];
       updatedVariants[variantIndex] = { 
         ...updatedVariants[variantIndex], 
@@ -125,23 +180,45 @@ export default function ContentGenerator() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ content, platform }),
+        body: JSON.stringify({ 
+          content, 
+          platform,
+          variantIndex
+        }),
       });
       
-      const data = await response.json();
+      // Get raw response first for debugging
+      const rawResponseText = await response.text();
+      console.log(`Raw regenerate API response (${platform}, variant ${variantIndex}):`, rawResponseText);
+      
+      // Try to parse JSON with error handling
+      let data;
+      try {
+        data = JSON.parse(rawResponseText);
+      } catch (parseError) {
+        console.error('Regenerate JSON parse error:', parseError);
+        const cleaned = rawResponseText.trim().replace(/^\uFEFF/, '');
+        try {
+          data = JSON.parse(cleaned);
+        } catch (secondError) {
+          throw new Error(`Failed to parse regenerate response: ${parseError.message}`);
+        }
+      }
       
       if (!response.ok) {
         throw new Error(data.error || `Failed to regenerate ${platform}`);
       }
       
-      // Update just the specific snippet in state
+      // Update just the specific snippet variant in state
       setSnippets(prev => {
+        if (!prev || !prev[platform]?.variants) return prev;
+        
         const updatedVariants = [...prev[platform].variants];
         updatedVariants[variantIndex] = { 
           text: data.snippet.text,
           counter: platform === 'xPost' 
-            ? `${data.snippet.charCount}/${data.snippet.maxChars || 280}`
-            : `${data.snippet.charCount} characters`,
+            ? `${data.snippet.text.length}/${data.snippet.maxChars || 280}`
+            : `${data.snippet.text.length} characters`,
           isRegenerating: false
         };
         
@@ -154,10 +231,12 @@ export default function ContentGenerator() {
         };
       });
     } catch (err) {
-      console.error(`Error regenerating ${platform}:`, err);
+      console.error(`Error regenerating ${platform} variant ${variantIndex}:`, err);
       
       // Reset regenerating state on error
       setSnippets(prev => {
+        if (!prev || !prev[platform]?.variants) return prev;
+        
         const updatedVariants = [...prev[platform].variants];
         updatedVariants[variantIndex] = { 
           ...updatedVariants[variantIndex], 
@@ -180,12 +259,17 @@ export default function ContentGenerator() {
   // Handle editing of a snippet
   const handleSnippetEdit = (platform, variantIndex, newText) => {
     setSnippets(prev => {
+      if (!prev || !prev[platform]?.variants) return prev;
+      
       const updatedVariants = [...prev[platform].variants];
+      const maxChars = platform === 'xPost' ? 
+        (updatedVariants[variantIndex].counter.split('/')[1] || 280) : null;
+      
       updatedVariants[variantIndex] = { 
         ...updatedVariants[variantIndex],
         text: newText,
         counter: platform === 'xPost' 
-          ? `${newText.length}/${updatedVariants[variantIndex].counter.split('/')[1]}`
+          ? `${newText.length}/${maxChars}`
           : `${newText.length} characters`
       };
       
@@ -199,9 +283,57 @@ export default function ContentGenerator() {
     });
   };
 
-  // Handle platform selection change
+  // Handle platform selection change - allow only one selection
   const handlePlatformChange = (platform, isSelected) => {
-    setSelectedPlatforms(prev => ({...prev, [platform]: isSelected}));
+    // If selecting a platform, deselect all others
+    if (isSelected) {
+      const newSelectedPlatforms = Object.keys(selectedPlatforms).reduce((acc, key) => {
+        acc[key] = key === platform;
+        return acc;
+      }, {});
+      setSelectedPlatforms(newSelectedPlatforms);
+    } else {
+      // If deselecting, just update the one platform
+      setSelectedPlatforms(prev => ({...prev, [platform]: isSelected}));
+    }
+  };
+
+  // Helper function to get platform display name
+  function getPlatformDisplayName(platform) {
+    switch (platform) {
+      case 'xPost':
+        return 'X (Twitter)';
+      case 'linkedinPost':
+        return 'LinkedIn';
+      case 'instagramCaption':
+        return 'Instagram';
+      case 'facebook':
+        return 'Facebook';
+      case 'substackNote':
+        return 'Substack';
+      default:
+        return platform.charAt(0).toUpperCase() + platform.slice(1);
+    }
+  }
+
+  // Select a specific variant
+  const handleSelectVariant = (platform, variantIndex) => {
+    setSnippets(prev => {
+      if (!prev || !prev[platform]?.variants) return prev;
+      
+      const updatedVariants = prev[platform].variants.map((variant, idx) => ({
+        ...variant,
+        isActive: idx === variantIndex
+      }));
+      
+      return {
+        ...prev,
+        [platform]: {
+          ...prev[platform],
+          variants: updatedVariants
+        }
+      };
+    });
   };
 
   return (
@@ -225,7 +357,7 @@ export default function ContentGenerator() {
         />
         
         <div className="mt-6 mb-4">
-          <h3 className="text-lg font-medium text-gray-700 mb-2">Choose platforms:</h3>
+          <h3 className="text-lg font-medium text-gray-700 mb-2">Choose a platform:</h3>
           <PlatformSelector 
             selectedPlatforms={selectedPlatforms}
             onPlatformChange={handlePlatformChange}
@@ -233,7 +365,40 @@ export default function ContentGenerator() {
         </div>
         
         {error && (
-          <div className="mt-2 text-red-500 text-sm">{error}</div>
+          <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="font-medium text-red-600">Error</p>
+            <p className="text-red-600">{error}</p>
+            
+            {/* Debug information */}
+            {debugInfo && (
+              <div className="mt-3">
+                <p className="text-sm font-medium text-red-500">Debugging Information:</p>
+                <div className="mt-1 p-3 bg-red-100 rounded text-xs font-mono overflow-x-auto">
+                  <p>Response Status: {debugInfo.responseStatus} {debugInfo.responseStatusText}</p>
+                  <p>Content-Type: {debugInfo.contentType}</p>
+                  <p>Response Length: {debugInfo.rawLength} characters</p>
+                  {debugInfo.firstCharCode !== null && (
+                    <p>First Character Code: {debugInfo.firstCharCode}</p>
+                  )}
+                  {debugInfo.firstFiftyChars && (
+                    <div>
+                      <p>First 50 characters:</p>
+                      <p className="break-all">{debugInfo.firstFiftyChars}</p>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-2 text-sm text-red-500">
+                  <p>Common causes for JSON parsing errors:</p>
+                  <ul className="list-disc pl-5 mt-1">
+                    <li>API returning HTML or plain text instead of JSON</li>
+                    <li>Whitespace or special characters before JSON content</li>
+                    <li>Empty response from server</li>
+                    <li>Server-side error in generating the response</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+          </div>
         )}
         
         <div className="mt-6 flex justify-center">
@@ -265,6 +430,7 @@ export default function ContentGenerator() {
               <h3 className="text-lg font-semibold mb-3 text-gray-800">
                 {getPlatformDisplayName(platform)}
               </h3>
+              
               <div className="space-y-4">
                 {platformData.variants.map((variant, index) => (
                   <CardSnippet
@@ -285,22 +451,4 @@ export default function ContentGenerator() {
       )}
     </div>
   );
-}
-
-// Helper function to get platform display name
-function getPlatformDisplayName(platform) {
-  switch (platform) {
-    case 'xPost':
-      return 'X (Twitter)';
-    case 'linkedinPost':
-      return 'LinkedIn';
-    case 'instagramCaption':
-      return 'Instagram';
-    case 'facebook':
-      return 'Facebook';
-    case 'substackNote':
-      return 'Substack';
-    default:
-      return platform.charAt(0).toUpperCase() + platform.slice(1);
-  }
 }
